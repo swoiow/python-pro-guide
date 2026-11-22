@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download and Combine gitignore files
         run: |
@@ -35,6 +35,19 @@ jobs:
           for url in "${URLS[@]}"; do
             echo -e "\n\n# --- Source: $url ---" >> $TARGET_FILE
             curl -sL "$url" >> $TARGET_FILE
+          done
+
+      - name: Enable IDE ignore rules
+        shell: bash
+        run: |
+          # Upstream Python and Go templates comment out these IDE directories.
+          sed -i -E 's/^[[:space:]]*#[[:space:]]*(\.idea\/|\.vscode\/)[[:space:]]*$/\1/' .gitignore
+
+          for entry in '.idea/' '.vscode/'; do
+            if ! grep -Fqx "$entry" .gitignore; then
+              echo "::error::Missing expected IDE ignore rule: $entry"
+              exit 1
+            fi
           done
 
       - name: Commit and Push changes
